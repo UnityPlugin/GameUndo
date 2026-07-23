@@ -1,0 +1,10 @@
+﻿{
+  "name": "com.zerowq.unityplugin.gameundo",
+  "displayName": "Game Undo",
+  "unity": "2019.4",
+  "version": "1.0.0",
+  "description": "Undo Manager for runtime\n\nRequires:\ngit@github.com:UnityPlugin/Singleton.git?path=/Assets/UnityPlugin/Singleton\ngit@github.com:UnityPlugin/IMGUIUtils.git?path=/Assets/UnityPlugin/IMGUIUtils\n",
+  "author": {
+    "name": "zeroWq"
+  }
+}

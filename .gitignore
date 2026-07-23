@@ -1,0 +1,27 @@
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Mac
+.DS_Store
+._*
+
+# VS Code
+.vscode
+.vs
+*.vsix
+*.sln
+*.slnx
+*.csproj
+
+#Unity
+ProjectSettings/**
+UserSettings/**
+Library/**
+Logs/**
+Temp/**
+obj/**
+
+#UnityPlugin
+Assets/**
+!Assets/UnityPlugin**
