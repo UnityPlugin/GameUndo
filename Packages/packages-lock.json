@@ -43,12 +43,19 @@
         "com.unity.modules.imgui": "1.0.0"
       }
     },
-    "com.zerowq.unityplugin.imguiutils": {
-      "version": "ssh://git@github.com/UnityPlugin/IMGUIUtils.git?path=/Assets/UnityPlugin/IMGUIUtils",
+    "com.zerowq.unityplugin.bridge": {
+      "version": "ssh://git@github.com/UnityPlugin/Bridge.git?path=/Assets/UnityPlugin/Bridge",
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "8dfbd1642d6b9849a0a980ed69c3dc584b3194fd"
+      "hash": "d325069a25a353642f5747fa74f059bd1cdd666f"
+    },
+    "com.zerowq.unityplugin.editorutils": {
+      "version": "ssh://git@github.com/UnityPlugin/EditorUtils.git?path=/Assets/UnityPlugin/EditorUtils",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "fe2901e3b75f637c6744fb757de1aa952c3d0c19"
     },
     "com.zerowq.unityplugin.singleton": {
       "version": "ssh://git@github.com/UnityPlugin/Singleton.git?path=/Assets/UnityPlugin/Singleton",

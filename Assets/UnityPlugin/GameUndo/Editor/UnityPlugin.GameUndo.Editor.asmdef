@@ -1,0 +1,28 @@
+{
+    "name": "UnityPlugin.GameUndo.Editor",
+    "rootNamespace": "UnityPlugin.GameUndo",
+    "references": [
+        "UnityPlugin.GameUndo.Runtime",
+        "UnityPlugin.EditorUtils.Editor",
+        "UnityPlugin.Singleton.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "ENABLE_EDITOR_UTILS"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.zerowq.unityplugin.editorutils",
+            "expression": "1.0.0",
+            "define": "ENABLE_EDITOR_UTILS"
+        }
+    ],
+    "noEngineReferences": false
+}
