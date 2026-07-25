@@ -4,7 +4,8 @@
     "references": [
         "UnityPlugin.GameUndo.Runtime",
         "UnityPlugin.EditorUtils.Editor",
-        "UnityPlugin.Singleton.Runtime"
+        "UnityPlugin.Singleton.Runtime",
+        "UnityPlugin.Bridge.Runtime"
     ],
     "includePlatforms": [
         "Editor"
