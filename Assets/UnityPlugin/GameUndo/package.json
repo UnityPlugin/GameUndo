@@ -1,10 +1,10 @@
-﻿{
-  "name": "com.zerowq.unityplugin.gameundo",
-  "displayName": "Game Undo",
-  "unity": "2019.4",
-  "version": "1.0.0",
-  "description": "Undo Manager for runtime\n\nRequires:\ngit@github.com:UnityPlugin/Singleton.git?path=/Assets/UnityPlugin/Singleton\ngit@github.com:UnityPlugin/Bridge.git?path=/Assets/UnityPlugin/Bridge\n\nOptinos:\ngit@github.com:UnityPlugin/EditorUtils.git?path=/Assets/UnityPlugin/EditorUtils\n",
-  "author": {
-    "name": "zeroWq"
-  }
+{
+    "name": "com.zerowq.unityplugin.gameundo",
+    "displayName": "Game Undo",
+    "unity": "2019.4",
+    "version": "1.0.0",
+    "description": "Undo Manager for runtime\n\nRequires:\ngit@github.com:UnityPlugin/Bridge.git?path=/Assets/UnityPlugin/Bridge\ngit@github.com:UnityPlugin/Singleton.git?path=/Assets/UnityPlugin/Singleton\n\nOptions:\ngit@github.com:UnityPlugin/EditorUtils.git?path=/Assets/UnityPlugin/EditorUtils\n",
+    "author": {
+        "name": "zeroWq"
+    }
 }

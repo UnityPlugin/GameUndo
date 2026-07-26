@@ -48,7 +48,7 @@
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "d325069a25a353642f5747fa74f059bd1cdd666f"
+      "hash": "dde963d68c62bfe4cd8a7fa5512b0fea4ee8dce3"
     },
     "com.zerowq.unityplugin.editorutils": {
       "version": "ssh://git@github.com/UnityPlugin/EditorUtils.git?path=/Assets/UnityPlugin/EditorUtils",
@@ -56,6 +56,13 @@
       "source": "git",
       "dependencies": {},
       "hash": "fe2901e3b75f637c6744fb757de1aa952c3d0c19"
+    },
+    "com.zerowq.unityplugin.packageeditor": {
+      "version": "ssh://git@github.com/UnityPlugin/PackageEditor.git?path=/Assets/UnityPlugin/PackageEditor",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "f75cde92676e12f286a9bcc7f9ddc1be669445d7"
     },
     "com.zerowq.unityplugin.singleton": {
       "version": "ssh://git@github.com/UnityPlugin/Singleton.git?path=/Assets/UnityPlugin/Singleton",

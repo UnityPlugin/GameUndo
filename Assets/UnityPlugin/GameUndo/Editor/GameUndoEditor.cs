@@ -9,6 +9,10 @@ namespace UnityPlugin.GameUndo
     [CustomEditor(typeof(GameUndo))]
     public class GameUndoEditor : BaseEditor<GameUndo>
     {
+        static Color UNDO_COLOR = Color.white;
+        static Color REDO_COLOR = new Color(1, 1, 1, 0.5f);
+
+        static GUILayoutOption COL_SIZE = GUILayout.Width(10);
         public override void OnInspectorGUI()
         {
             base.OnInspectorGUI();
@@ -18,35 +22,27 @@ namespace UnityPlugin.GameUndo
             {
                 if (scope.fold)
                 {
-                    var index = _target.UndoIndex;
-                    for (var i = _target.UndoCount - 1; i >= 0; i--)
+                    using (IMGUI.Indent(-1))
                     {
-                        var num = _target.UndoCount - i;
-                        sb.Clear().Append("Undo Label ").Append(num);
-                        var label = IMGUI.GetGUIContent(sb.ToString());
-
-                        if (i == index)
+                        var index = _target.UndoIndex;
+                        for (var i = _target.UndoCount - 1; i >= 0; i--)
                         {
-                            sb.Clear().AppendFormat("> {0}\t", num).Append(_target.GetUndoName(i));
-                            label.text = sb.ToString();
-                        }
-                        else
-                        {
-                            sb.Clear().AppendFormat("   {0}\t", num).Append(_target.GetUndoName(i));
-                            label.text = sb.ToString();
-                        }
-                        if (i > index)
-                        {
-                            using (IMGUI.Color(new Color(1, 1, 1, 0.5f)))
+                            using (IMGUI.Color(i > index ? REDO_COLOR : UNDO_COLOR))
                             {
-                                EditorGUILayout.LabelField(label);
+                                using (IMGUI.Horizontal())
+                                {
+                                    EditorGUILayout.LabelField(i == index ? ">" : " ", COL_SIZE);
+
+                                    var num = _target.UndoCount - i;
+                                    EditorGUILayout.LabelField(IMGUI.GetGUIContent(num.ToString()), COL_SIZE);
+
+                                    sb.Clear().Append("Undo Label ").Append(i);
+                                    var label = IMGUI.GetGUIContent(sb.ToString());
+                                    label.text = _target.GetUndoName(i);
+                                    EditorGUILayout.LabelField(label);
+                                }
                             }
                         }
-                        else
-                        {
-                            EditorGUILayout.LabelField(label);
-                        }
-
                     }
                 }
             }

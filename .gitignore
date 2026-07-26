@@ -25,3 +25,4 @@ obj/**
 #UnityPlugin
 Assets/**
 !Assets/UnityPlugin**
+**/UnityPlugin/**/PackageInfo.asset**
