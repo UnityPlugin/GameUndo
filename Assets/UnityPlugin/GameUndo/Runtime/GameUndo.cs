@@ -205,7 +205,7 @@ namespace UnityPlugin.GameUndo
                 _undoList.Clear();
             }
 
-            if (_undoItemPool.Count > 0)
+            if (_undoItemPool != null && _undoItemPool.Count > 0)
             {
                 foreach (var pair in _undoItemPool)
                 {
