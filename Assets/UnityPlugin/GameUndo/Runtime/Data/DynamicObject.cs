@@ -60,6 +60,21 @@ namespace UnityPlugin.GameUndo
             _values = null;
         }
 
+        public bool Equals(DynamicObject obj)
+        {
+            if (obj == null) return false;
+            if (_values == null && obj._values == null) return true;
+            if (_values == null || obj._values == null) return false;
+            if (_values.Count != obj._values.Count) return false;
+
+            foreach (var pair in _values)
+            {
+                if (!obj._values.ContainsKey(pair.Key)) return false;
+                if (pair.Value != obj._values[pair.Key]) return false;
+            }
+            return true;
+        }
+
 #if GAMEUNDO_TO_STRING
         public override string ToString()
         {

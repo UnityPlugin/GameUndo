@@ -10,6 +10,7 @@ namespace UnityPlugin.GameUndo
         bool Mergeable { get; }
         void DoGet(bool oldValue);
         void DoSet(bool oldValue);
+        bool IsChanged();
         bool Merge(IUndoItem item);
         void Reset();
     }

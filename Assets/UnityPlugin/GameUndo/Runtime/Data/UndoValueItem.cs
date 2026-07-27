@@ -10,24 +10,22 @@ using System.Text;
 using UnityPlugin.Bridge;
 #endif
 
-
 namespace UnityPlugin.GameUndo
 {
     public struct UndoValueParam<T>
     {
         public string name;
-        public Func<T> getter;
-        public Action<T> setter;
+        public Func<object, T> getter;
+        public Action<object, T> setter;
         public object context;
         public object target;
         public bool mergeable;
     }
 
-
     internal sealed class UndoValueItem<T> : IUndoItem
     {
-        Func<T> _getter;
-        Action<T> _setter;
+        Func<object, T> _getter;
+        Action<object, T> _setter;
         T _oldValue;
         T _newValue;
 
@@ -61,8 +59,8 @@ namespace UnityPlugin.GameUndo
             {
                 if (_getter != null)
                 {
-                    if (oldValue) _oldValue = _getter.Invoke();
-                    else _newValue = _getter.Invoke();
+                    if (oldValue) _oldValue = _getter.Invoke(Target);
+                    else _newValue = _getter.Invoke(Target);
                 }
             }
             catch (Exception e)
@@ -77,8 +75,8 @@ namespace UnityPlugin.GameUndo
             {
                 if (_setter != null)
                 {
-                    if (oldValue) _setter.Invoke(_oldValue);
-                    else _setter.Invoke(_newValue);
+                    if (oldValue) _setter.Invoke(Target, _oldValue);
+                    else _setter.Invoke(Target, _newValue);
 #if GAMEUNDO_TO_STRING
                     _changed = true;
 #endif
@@ -88,6 +86,13 @@ namespace UnityPlugin.GameUndo
             {
                 Debug.LogException(e);
             }
+        }
+
+        public bool IsChanged()
+        {
+            if (_newValue == null && _oldValue == null) return false;
+            if (_newValue == null || _oldValue == null) return true;
+            return !_newValue.Equals(_oldValue);
         }
 
         public bool Merge(IUndoItem item)
@@ -101,8 +106,8 @@ namespace UnityPlugin.GameUndo
                 if (Target != item.Target) break;
 
                 if (!(item is UndoValueItem<T> tmp)) break;
-                if (_getter != tmp._getter) break;
-                if (_setter != tmp._setter) break;
+                // if (_getter != tmp._getter) break;
+                // if (_setter != tmp._setter) break;
 
                 DoGet(false);
                 return true;
@@ -133,11 +138,13 @@ namespace UnityPlugin.GameUndo
 #if GAMEUNDO_TO_STRING
             if (string.IsNullOrEmpty(_str) || _changed)
             {
+                var targetStr = Target == null ? "Null" : Target.GetType().Name;
+                var contextStr = Context == null ? "Null" : Context.GetType().Name;
                 var sb = UnityGenericPool<StringBuilder>.Get();
                 sb.Clear()
-                .Append(Name).Append(' ')
-                .Append('[').Append(Target).Append('@').Append(Context).Append(']')
-                .Append(" : ").Append(_newValue);
+                .Append(Name)
+                .Append(" [").Append(targetStr).Append('@').Append(contextStr).Append("] : ")
+                .Append(_oldValue).Append(" -> ").Append(_newValue);
                 _str = sb.ToString();
                 UnityGenericPool<StringBuilder>.Release(sb);
             }
