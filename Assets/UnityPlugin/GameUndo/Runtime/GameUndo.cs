@@ -7,7 +7,7 @@ namespace UnityPlugin.GameUndo
 {
     public partial class GameUndo : Singleton<GameUndo>
     {
-        public delegate void GameUndoCallback(object context, string name);
+        public delegate void GameUndoCallback(object context, string name, object target);
 
         public const int DEFAULT_UNDO_SIZE = 128;
 
@@ -15,6 +15,7 @@ namespace UnityPlugin.GameUndo
         {
             undoSize = DEFAULT_UNDO_SIZE,
             useInput = true,
+            mergeInterval = 1.0f
         };
         public static Config DefaultConfig
         {
@@ -27,6 +28,8 @@ namespace UnityPlugin.GameUndo
         }
 
         [SerializeField, Range(32, 128)] int undoSize = _defaultConfig.undoSize;
+        [SerializeField] float mergeInterval = _defaultConfig.mergeInterval;
+        [SerializeField] bool stopMerge;
 
         List<IUndoItem> _undoList = new List<IUndoItem>();
 
@@ -36,6 +39,7 @@ namespace UnityPlugin.GameUndo
         public static event GameUndoCallback OnRedoAfter;
 
         int _index = 0;
+        float _mergeTime;
 
         #region Static
 
@@ -73,17 +77,37 @@ namespace UnityPlugin.GameUndo
             stack.Push(item);
         }
 
-        public static bool SetValue<T>(Func<T> getter, Action<T> setter, T value, object context = null, string name = null, bool mergeable = true)
+        public static bool SetValue<T>(
+            T value,
+            Func<T> getter,
+            Action<T> setter,
+            object context = null,
+            object target = null,
+            string name = null,
+            bool mergeable = true)
         {
-            if (string.IsNullOrEmpty(name)) name = $"Set Value [{getter}]";
+            return SetValue(value, new UndoValueParam<T>
+            {
+                name = name,
+                getter = getter,
+                setter = setter,
+                context = context,
+                target = target,
+                mergeable = mergeable,
+            });
+        }
+
+        public static bool SetValue<T>(T value, UndoValueParam<T> param)
+        {
+            if (string.IsNullOrEmpty(param.name)) param.name = $"Set Value";
 
             var record = GetUndoItem<UndoValueItem<T>>();
-            record.Setup(name, getter, setter, context, mergeable);
+            record.Setup(param);
             record.DoGet(true);
 
             try
             {
-                setter?.Invoke(value);
+                param.setter?.Invoke(value);
             }
             catch (Exception e)
             {
@@ -95,28 +119,66 @@ namespace UnityPlugin.GameUndo
             return true;
         }
 
-        public static bool RecordValue<T>(Func<T> getter, Action<T> setter, object context = null, string name = null, bool mergeable = true)
+        public static bool RecordValue<T>(
+            Func<T> getter,
+            Action<T> setter,
+            object context,
+            object target = null,
+            string name = null,
+            bool mergeable = true)
+        {
+            return RecordValue(new UndoValueParam<T>
+            {
+                name = name,
+                getter = getter,
+                setter = setter,
+                context = context,
+                target = target,
+                mergeable = mergeable,
+            });
+        }
+
+        public static bool RecordValue<T>(UndoValueParam<T> param)
         {
             if (_currentRecord != null) return false;
 
-            if (string.IsNullOrEmpty(name)) name = $"Record ({context}) Value [{getter}]";
+            if (string.IsNullOrEmpty(param.name)) param.name = $"Record Value";
 
             var record = GetUndoItem<UndoValueItem<T>>();
-            record.Setup(name, getter, setter, context, mergeable);
+            record.Setup(param);
 
             _currentRecord = record;
 
             return true;
         }
 
-        public static bool RecordObject(Action<DynamicObject> getter, Action<DynamicObject> setter, object context = null, string name = null, bool mergeable = true)
+        public static bool RecordObject(
+            Action<DynamicObject> getter,
+            Action<DynamicObject> setter,
+            object context,
+            object target,
+            string name = null,
+            bool mergeable = true)
+        {
+            return RecordObject(new UndoObjectParam
+            {
+                name = name,
+                getter = getter,
+                setter = setter,
+                context = context,
+                target = target,
+                mergeable = mergeable,
+            });
+        }
+
+        public static bool RecordObject(UndoObjectParam param)
         {
             if (_currentRecord != null) return false;
 
-            if (string.IsNullOrEmpty(name)) name = $"Record ({context}) Object [{getter}]";
+            if (string.IsNullOrEmpty(param.name)) param.name = $"Record Object";
 
             var record = GetUndoItem<UndoObjectItem>();
-            record.Setup(name, getter, setter, context, mergeable);
+            record.Setup(param);
 
             _currentRecord = record;
 
@@ -130,6 +192,11 @@ namespace UnityPlugin.GameUndo
             Instance?.PushInner(_currentRecord);
             _currentRecord = null;
             return true;
+        }
+
+        public static void StopMerge()
+        {
+            if (HasInstance()) Instance.stopMerge = true;
         }
 
         public static void Clear()
@@ -183,19 +250,28 @@ namespace UnityPlugin.GameUndo
 
             try
             {
-                if (_undoList.Count > 0)
+                if (!stopMerge)
                 {
-                    var last = _undoList[_undoList.Count - 1];
-                    if (last.Merge(item))
+                    var time = Time.realtimeSinceStartup;
+                    if (time - _mergeTime < mergeInterval)
                     {
-                        ReleaseUndoItem(item);
-                        return;
+                        if (_undoList.Count > 0)
+                        {
+                            var last = _undoList[_undoList.Count - 1];
+                            if (last.Merge(item))
+                            {
+                                ReleaseUndoItem(item);
+                                _mergeTime = Time.realtimeSinceStartup;
+                                return;
+                            }
+                        }
                     }
                 }
 
                 item.DoGet(false);
                 _index = _undoList.Count;
                 _undoList.Add(item);
+                stopMerge = false;
             }
             catch (Exception e)
             {
@@ -241,9 +317,9 @@ namespace UnityPlugin.GameUndo
             try
             {
                 var item = _undoList[_index];
-                OnUndoBefore?.Invoke(item.Context, item.Name);
+                OnUndoBefore?.Invoke(item.Context, item.Name, item.Target);
                 item.DoSet(true);
-                OnUndoAfter?.Invoke(item.Context, item.Name);
+                OnUndoAfter?.Invoke(item.Context, item.Name, item.Target);
             }
             catch (Exception e)
             {
@@ -264,9 +340,9 @@ namespace UnityPlugin.GameUndo
             try
             {
                 var item = _undoList[_index];
-                OnRedoBefore?.Invoke(item.Context, item.Name);
+                OnRedoBefore?.Invoke(item.Context, item.Name, item.Target);
                 item.DoSet(false);
-                OnRedoAfter?.Invoke(item.Context, item.Name);
+                OnRedoAfter?.Invoke(item.Context, item.Name, item.Target);
             }
             catch (Exception e)
             {
