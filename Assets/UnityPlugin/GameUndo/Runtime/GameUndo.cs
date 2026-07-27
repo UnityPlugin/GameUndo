@@ -7,6 +7,8 @@ namespace UnityPlugin.GameUndo
 {
     public partial class GameUndo : Singleton<GameUndo>
     {
+        public delegate void GameUndoCallback(object context, string name);
+
         public const int DEFAULT_UNDO_SIZE = 128;
 
         static Config _defaultConfig = new Config
@@ -28,10 +30,10 @@ namespace UnityPlugin.GameUndo
 
         List<IUndoItem> _undoList = new List<IUndoItem>();
 
-        public static event Action<string> OnUndoBefore;
-        public static event Action<string> OnUndoAfter;
-        public static event Action<string> OnRedoBefore;
-        public static event Action<string> OnRedoAfter;
+        public static event GameUndoCallback OnUndoBefore;
+        public static event GameUndoCallback OnUndoAfter;
+        public static event GameUndoCallback OnRedoBefore;
+        public static event GameUndoCallback OnRedoAfter;
 
         int _index = 0;
 
@@ -71,12 +73,12 @@ namespace UnityPlugin.GameUndo
             stack.Push(item);
         }
 
-        public static bool SetValue<T>(Func<T> getter, Action<T> setter, T value, string name = null)
+        public static bool SetValue<T>(Func<T> getter, Action<T> setter, T value, object context = null, string name = null, bool mergeable = true)
         {
-            if (string.IsNullOrEmpty(name)) name = $"Set Value [{getter}] [{value}]";
+            if (string.IsNullOrEmpty(name)) name = $"Set Value [{getter}]";
 
             var record = GetUndoItem<UndoValueItem<T>>();
-            record.Setup(name, getter, setter, null);
+            record.Setup(name, getter, setter, context, mergeable);
             record.DoGet(true);
 
             try
@@ -93,28 +95,28 @@ namespace UnityPlugin.GameUndo
             return true;
         }
 
-        public static bool RecordValue<T>(Func<T> getter, Action<T> setter, object context = null, string name = null)
+        public static bool RecordValue<T>(Func<T> getter, Action<T> setter, object context = null, string name = null, bool mergeable = true)
         {
             if (_currentRecord != null) return false;
 
             if (string.IsNullOrEmpty(name)) name = $"Record ({context}) Value [{getter}]";
 
             var record = GetUndoItem<UndoValueItem<T>>();
-            record.Setup(name, getter, setter, context);
+            record.Setup(name, getter, setter, context, mergeable);
 
             _currentRecord = record;
 
             return true;
         }
 
-        public static bool RecordObject(Action<DynamicObject> getter, Action<DynamicObject> setter, object context = null, string name = null)
+        public static bool RecordObject(Action<DynamicObject> getter, Action<DynamicObject> setter, object context = null, string name = null, bool mergeable = true)
         {
             if (_currentRecord != null) return false;
 
             if (string.IsNullOrEmpty(name)) name = $"Record ({context}) Object [{getter}]";
 
             var record = GetUndoItem<UndoObjectItem>();
-            record.Setup(name, getter, setter, context);
+            record.Setup(name, getter, setter, context, mergeable);
 
             _currentRecord = record;
 
@@ -168,6 +170,8 @@ namespace UnityPlugin.GameUndo
 
         void PushInner(IUndoItem item)
         {
+            if (item == null) return;
+
             if (_index < _undoList.Count - 1)
             {
                 for (var i = _undoList.Count - 1; i > _index; i--)
@@ -179,6 +183,16 @@ namespace UnityPlugin.GameUndo
 
             try
             {
+                if (_undoList.Count > 0)
+                {
+                    var last = _undoList[_undoList.Count - 1];
+                    if (last.Merge(item))
+                    {
+                        ReleaseUndoItem(item);
+                        return;
+                    }
+                }
+
                 item.DoGet(false);
                 _index = _undoList.Count;
                 _undoList.Add(item);
@@ -227,9 +241,9 @@ namespace UnityPlugin.GameUndo
             try
             {
                 var item = _undoList[_index];
-                OnUndoBefore?.Invoke(item.Name);
+                OnUndoBefore?.Invoke(item.Context, item.Name);
                 item.DoSet(true);
-                OnUndoAfter?.Invoke(item.Name);
+                OnUndoAfter?.Invoke(item.Context, item.Name);
             }
             catch (Exception e)
             {
@@ -250,9 +264,9 @@ namespace UnityPlugin.GameUndo
             try
             {
                 var item = _undoList[_index];
-                OnRedoBefore?.Invoke(item.Name);
+                OnRedoBefore?.Invoke(item.Context, item.Name);
                 item.DoSet(false);
-                OnRedoAfter?.Invoke(item.Name);
+                OnRedoAfter?.Invoke(item.Context, item.Name);
             }
             catch (Exception e)
             {
@@ -266,10 +280,13 @@ namespace UnityPlugin.GameUndo
         public int UndoCount { get => _undoList.Count; }
         public int UndoIndex { get => _index; }
 
-        public string GetUndoName(int index)
+        public string GetUndoName(int index, bool simpleName = false)
         {
             if (index < 0 || index > _undoList.Count) return null;
-            return _undoList[index].Name;
+            var item = _undoList[index];
+
+            if (simpleName) return item.Name;
+            return item.ToString();
         }
 #endif
     }

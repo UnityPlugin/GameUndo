@@ -18,8 +18,9 @@ namespace UnityPlugin.GameUndo
             base.OnInspectorGUI();
 
             var sb = UnityGenericPool<StringBuilder>.Get();
-            using (var scope = IMGUI.Foldout("Undo List"))
+            using (var scope = IMGUI.Foldout("GameUndoEditor_Undo List"))
             {
+                scope.name.text = sb.Clear().Append("Undo List (").Append(_target.UndoCount).Append(')').ToString();
                 if (scope.fold)
                 {
                     using (IMGUI.Indent(-1))
