@@ -17,6 +17,18 @@ namespace UnityPlugin.GameUndo
         {
             base.OnInspectorGUI();
 
+            var current = _target.CurrentRecord;
+            if (!string.IsNullOrEmpty(current))
+            {
+                EditorGUILayout.Space();
+                EditorGUILayout.PrefixLabel(IMGUI.TmpC("Recording"));
+                using (IMGUI.Indent())
+                {
+                    EditorGUILayout.LabelField(IMGUI.TmpC(current));
+                }
+            }
+
+            EditorGUILayout.Space();
             var sb = UnityGenericPool<StringBuilder>.Get();
             using (var scope = IMGUI.Foldout("GameUndoEditor_Undo List"))
             {
@@ -32,15 +44,11 @@ namespace UnityPlugin.GameUndo
                             {
                                 using (IMGUI.Horizontal())
                                 {
-                                    EditorGUILayout.LabelField(i == index ? ">" : " ", COL_SIZE);
+                                    EditorGUILayout.LabelField(IMGUI.TmpC(i == index ? ">" : " "), COL_SIZE);
 
                                     var num = _target.UndoCount - i;
-                                    EditorGUILayout.LabelField(IMGUI.GetGUIContent(num.ToString()), COL_SIZE);
-
-                                    sb.Clear().Append("Undo Label ").Append(i);
-                                    var label = IMGUI.GetGUIContent(sb.ToString());
-                                    label.text = _target.GetUndoName(i);
-                                    EditorGUILayout.LabelField(label);
+                                    EditorGUILayout.LabelField(IMGUI.TmpC(num.ToString()), COL_SIZE);
+                                    EditorGUILayout.LabelField(IMGUI.TmpC(_target.GetUndoName(i)));
                                 }
                             }
                         }

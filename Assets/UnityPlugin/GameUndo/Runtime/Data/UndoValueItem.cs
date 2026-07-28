@@ -50,7 +50,7 @@ namespace UnityPlugin.GameUndo
             _setter = param.setter;
 
             DoGet(true);
-            DoSet(false);
+            DoGet(false);
         }
 
         public void DoGet(bool oldValue)
@@ -61,6 +61,9 @@ namespace UnityPlugin.GameUndo
                 {
                     if (oldValue) _oldValue = _getter.Invoke(Target);
                     else _newValue = _getter.Invoke(Target);
+#if GAMEUNDO_TO_STRING
+                    _changed = true;
+#endif
                 }
             }
             catch (Exception e)
@@ -77,9 +80,6 @@ namespace UnityPlugin.GameUndo
                 {
                     if (oldValue) _setter.Invoke(Target, _oldValue);
                     else _setter.Invoke(Target, _newValue);
-#if GAMEUNDO_TO_STRING
-                    _changed = true;
-#endif
                 }
             }
             catch (Exception e)

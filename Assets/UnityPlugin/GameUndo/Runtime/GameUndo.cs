@@ -41,52 +41,42 @@ namespace UnityPlugin.GameUndo
         int _index = 0;
         float _pushTime;
 
-        #region Static
-
         static IUndoItem _currentRecord;
 
-        static Dictionary<Type, Stack<IUndoItem>> _undoItemPool;
+        #region Static
 
-        static T GetUndoItem<T>() where T : class, IUndoItem, new()
+        #region Set Value
+
+        public static bool SetValue<TTarget, TValue>(
+            TValue value,
+            Func<TTarget, TValue> getter,
+            Action<TTarget, TValue> setter,
+            object context = null,
+            TTarget target = null,
+            string name = null,
+            bool mergeable = true) where TTarget : class
         {
-            do
+            return SetValue(value, new UndoValueParam<TValue>
             {
-                var type = typeof(T);
-                if (_undoItemPool == null || !_undoItemPool.ContainsKey(type)) break;
-                if (_undoItemPool[type].TryPop(out var result))
-                {
-                    return result as T;
-                }
-            } while (false);
-
-            return new T();
+                name = name,
+                getter = obj => getter.Invoke((TTarget)obj),
+                setter = (obj, v) => setter.Invoke((TTarget)obj, v),
+                context = context,
+                target = target,
+                mergeable = mergeable,
+            });
         }
 
-        static void ReleaseUndoItem(IUndoItem item)
-        {
-            if (item == null) return;
-
-            var type = item.GetType();
-            if (_undoItemPool == null) _undoItemPool = new Dictionary<Type, Stack<IUndoItem>>();
-            if (!_undoItemPool.TryGetValue(type, out var stack))
-            {
-                stack = new Stack<IUndoItem>();
-                _undoItemPool[type] = stack;
-            }
-            item.Reset();
-            stack.Push(item);
-        }
-
-        public static bool SetValue<T>(
-            T value,
-            Func<object, T> getter,
-            Action<object, T> setter,
+        public static bool SetValue<TValue>(
+            TValue value,
+            Func<object, TValue> getter,
+            Action<object, TValue> setter,
             object context = null,
             object target = null,
             string name = null,
             bool mergeable = true)
         {
-            return SetValue(value, new UndoValueParam<T>
+            return SetValue(value, new UndoValueParam<TValue>
             {
                 name = name,
                 getter = getter,
@@ -107,7 +97,6 @@ namespace UnityPlugin.GameUndo
 
             var record = GetUndoItem<UndoValueItem<T>>();
             record.Setup(param);
-            record.DoGet(true);
 
             try
             {
@@ -123,21 +112,43 @@ namespace UnityPlugin.GameUndo
             return true;
         }
 
-        public static bool RecordValue<T>(
-            Func<object, T> getter,
-            Action<object, T> setter,
+        #endregion
+
+        #region Record Value
+
+        public static bool RecordValue<TTarget, TValue>(
+            string name,
             object context,
-            object target = null,
-            string name = null,
+            TTarget target,
+            Func<TTarget, TValue> getter,
+            Action<TTarget, TValue> setter,
+            bool mergeable = true) where TTarget : class
+        {
+            return RecordValue(new UndoValueParam<TValue>
+            {
+                name = name,
+                getter = obj => getter.Invoke((TTarget)obj),
+                setter = (obj, v) => setter.Invoke((TTarget)obj, v),
+                context = context,
+                target = target,
+                mergeable = mergeable,
+            });
+        }
+
+        public static bool RecordValue<TValue>(
+            string name,
+            object context,
+            Func<object, TValue> getter,
+            Action<object, TValue> setter,
             bool mergeable = true)
         {
-            return RecordValue(new UndoValueParam<T>
+            return RecordValue(new UndoValueParam<TValue>
             {
                 name = name,
                 getter = getter,
                 setter = setter,
                 context = context,
-                target = target,
+                target = null,
                 mergeable = mergeable,
             });
         }
@@ -160,12 +171,73 @@ namespace UnityPlugin.GameUndo
             return true;
         }
 
+        #endregion
+
+        #region Set List
+
+        public static bool SetList<TList, TValue>(
+            string name,
+            object context,
+            TList list,
+            TValue refItem,
+            Action<TList, TValue> before,
+            Action<TList, TValue> after) where TList : class
+        {
+            return SetList(new UndoListParam<TValue>
+            {
+                name = name,
+                context = context,
+                target = list,
+                refItem = refItem,
+                before = (obj, item) => before.Invoke((TList)obj, item),
+                after = (obj, item) => after.Invoke((TList)obj, item),
+            });
+        }
+
+        public static bool SetList<T>(UndoListParam<T> param)
+        {
+            if (string.IsNullOrEmpty(param.name))
+            {
+                param.name = $"Set List";
+            }
+
+            var record = GetUndoItem<UndoListItem<T>>();
+            record.Setup(param);
+
+            Instance?.PushInner(record);
+
+            return true;
+        }
+
+        #endregion
+
+        #region Record Object
+
+        public static bool RecordObject<TTarget>(
+            string name,
+            object context,
+             TTarget target,
+            Action<TTarget, DynamicObject> getter,
+            Action<TTarget, DynamicObject> setter,
+            bool mergeable = true) where TTarget : class
+        {
+            return RecordObject(new UndoObjectParam
+            {
+                name = name,
+                getter = (obj, data) => getter.Invoke((TTarget)obj, data),
+                setter = (obj, data) => setter.Invoke((TTarget)obj, data),
+                context = context,
+                target = target,
+                mergeable = mergeable,
+            });
+        }
+
         public static bool RecordObject(
+            string name,
+            object context,
+             object target,
             Action<object, DynamicObject> getter,
             Action<object, DynamicObject> setter,
-            object context,
-            object target,
-            string name = null,
             bool mergeable = true)
         {
             return RecordObject(new UndoObjectParam
@@ -197,6 +269,10 @@ namespace UnityPlugin.GameUndo
             return true;
         }
 
+        #endregion
+
+        #region Other
+
         public static bool StopRecord(object context = null)
         {
             if (_currentRecord == null || _currentRecord.Context != context) return false;
@@ -214,6 +290,44 @@ namespace UnityPlugin.GameUndo
         public static void Clear()
         {
             Instance?.ClearInner();
+        }
+
+        #endregion
+
+        #endregion
+
+        #region Utils
+
+        static Dictionary<Type, Stack<IUndoItem>> _undoItemPool;
+
+        static T GetUndoItem<T>() where T : class, IUndoItem, new()
+        {
+            do
+            {
+                var type = typeof(T);
+                if (_undoItemPool == null || !_undoItemPool.ContainsKey(type)) break;
+                if (_undoItemPool[type].TryPop(out var result))
+                {
+                    return result as T;
+                }
+            } while (false);
+
+            return new T();
+        }
+
+        static void ReleaseUndoItem(IUndoItem item)
+        {
+            if (item == null) return;
+
+            var type = item.GetType();
+            if (_undoItemPool == null) _undoItemPool = new Dictionary<Type, Stack<IUndoItem>>();
+            if (!_undoItemPool.TryGetValue(type, out var stack))
+            {
+                stack = new Stack<IUndoItem>();
+                _undoItemPool[type] = stack;
+            }
+            item.Reset();
+            stack.Push(item);
         }
 
         #endregion
@@ -250,6 +364,7 @@ namespace UnityPlugin.GameUndo
         void PushInner(IUndoItem item)
         {
             if (item == null) return;
+            item.DoGet(false);
 
             if (!item.IsChanged())
             {
@@ -292,7 +407,6 @@ namespace UnityPlugin.GameUndo
                     }
                 }
 
-                item.DoGet(false);
                 _index = _undoList.Count;
                 _undoList.Add(item);
                 _pushTime = time;
@@ -378,6 +492,9 @@ namespace UnityPlugin.GameUndo
         #endregion
 
 #if UNITY_EDITOR
+
+        public string CurrentRecord { get => _currentRecord == null ? null : _currentRecord.ToString(); }
+
         public int UndoCount { get => _undoList.Count; }
         public int UndoIndex { get => _index; }
 

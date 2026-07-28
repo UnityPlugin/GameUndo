@@ -12,22 +12,22 @@ using UnityPlugin.Bridge;
 
 namespace UnityPlugin.GameUndo
 {
-    public struct UndoObjectParam
+    public struct UndoListParam<T>
     {
         public string name;
-        public Action<object, DynamicObject> getter;
-        public Action<object, DynamicObject> setter;
+        public Action<object, T> before;
+        public Action<object, T> after;
         public object context;
         public object target;
-        public bool mergeable;
+        public T refItem;
     }
 
-    internal sealed class UndoObjectItem : IUndoItem
+    internal sealed class UndoListItem<T> : IUndoItem
     {
-        Action<object, DynamicObject> _getter;
-        Action<object, DynamicObject> _setter;
-        DynamicObject _oldValue = new DynamicObject();
-        DynamicObject _newValue = new DynamicObject();
+        Action<object, T> _before;
+        Action<object, T> _after;
+
+        T _refItem;
 
 #if GAMEUNDO_TO_STRING
         bool _changed;
@@ -36,54 +36,30 @@ namespace UnityPlugin.GameUndo
 
         public string Name { get; private set; }
         public object Context { get; private set; }
-        public object Target { get; private set; }
         public bool Mergeable { get; private set; }
+        public object Target { get; private set; }
 
-        public void Setup(UndoObjectParam param)
+        public void Setup(UndoListParam<T> param)
         {
             Name = param.name;
             Context = param.context;
             Target = param.target;
-            Mergeable = param.mergeable;
+            Mergeable = false;
 
-            _getter = param.getter;
-            _setter = param.setter;
-
-            _oldValue.Clear();
-            _newValue.Clear();
-
-            DoGet(true);
-            DoGet(false);
+            _refItem = param.refItem;
+            _before = param.before;
+            _after = param.after;
         }
 
-        public void DoGet(bool oldValue)
-        {
-            try
-            {
-                if (_getter != null)
-                {
-                    if (oldValue) _getter.Invoke(Target, _oldValue);
-                    else _getter.Invoke(Target, _newValue);
-#if GAMEUNDO_TO_STRING
-                    _changed = true;
-#endif
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-            }
-        }
+        public void DoGet(bool oldValue) { }
 
         public void DoSet(bool oldValue)
         {
             try
             {
-                if (_setter != null)
-                {
-                    if (oldValue) _setter.Invoke(Target, _oldValue);
-                    else _setter.Invoke(Target, _newValue);
-                }
+                if (oldValue) _before?.Invoke(Target, _refItem);
+                else _after?.Invoke(Target, _refItem);
+                _changed = true;
             }
             catch (Exception e)
             {
@@ -91,13 +67,8 @@ namespace UnityPlugin.GameUndo
             }
         }
 
-        public bool IsChanged()
-        {
-            if (_newValue == null && _oldValue == null) return false;
-            if (_newValue == null || _oldValue == null) return true;
+        public bool IsChanged() => true;
 
-            return !_newValue.Equals(_oldValue);
-        }
 
         public bool Merge(IUndoItem item)
         {
@@ -109,11 +80,9 @@ namespace UnityPlugin.GameUndo
                 if (Context != item.Context) break;
                 if (Target != item.Target) break;
 
-                if (!(item is UndoObjectItem)) break;
-                // if (_getter != tmp._getter) break;
-                // if (_setter != tmp._setter) break;
+                if (!(item is UndoListItem<T> tmp)) break;
+                if (_refItem.Equals(tmp._refItem)) break;
 
-                DoGet(false);
                 return true;
             } while (false);
             return false;
@@ -125,19 +94,15 @@ namespace UnityPlugin.GameUndo
             Context = null;
             Target = null;
 
-            _getter = null;
-            _setter = null;
+            _before = null;
+            _after = null;
 
-            _oldValue.Clear();
-            _newValue.Clear();
+            _refItem = default;
         }
 
         public void Dispose()
         {
             Reset();
-
-            _oldValue = null;
-            _newValue = null;
         }
 
         public override string ToString()
@@ -151,7 +116,7 @@ namespace UnityPlugin.GameUndo
                 sb.Clear()
                 .Append(Name)
                 .Append(" [").Append(targetStr).Append('@').Append(contextStr).Append("] : ")
-                .Append(_oldValue).Append(" -> ").Append(_newValue);
+                .Append(_refItem);
                 _str = sb.ToString();
                 UnityGenericPool<StringBuilder>.Release(sb);
             }
