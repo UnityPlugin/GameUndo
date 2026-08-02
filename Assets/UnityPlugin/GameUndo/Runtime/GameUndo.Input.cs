@@ -6,17 +6,21 @@ namespace UnityPlugin.GameUndo
 {
     public partial class GameUndo : Singleton<GameUndo>
     {
-        [SerializeField,] bool useInput = _defaultConfig.useInput;
-
         InputBridge.KeyButton _keyZ;
         InputBridge.KeyButton _keyY;
         InputBridge.KeyButton _keyLeftShift;
         InputBridge.KeyButton _keyRightShift;
         InputBridge.KeyButton _keyLeftCtrl;
         InputBridge.KeyButton _keyRightCtrl;
+
 #if UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
         InputBridge.KeyButton _keyLeftCommand;
         InputBridge.KeyButton _keyRightCommand;
+#endif
+
+#if UNITY_EDITOR
+        InputBridge.KeyButton _keyLeftAlt;
+        InputBridge.KeyButton _keyRightAlt;
 #endif
 
         void InitInput()
@@ -33,17 +37,22 @@ namespace UnityPlugin.GameUndo
             _keyLeftCommand = InputBridge.GetKeyButton(KeyCode.LeftCommand);
             _keyRightCommand = InputBridge.GetKeyButton(KeyCode.RightCommand);
 #endif
+#if UNITY_EDITOR
+            _keyLeftAlt = InputBridge.GetKeyButton(KeyCode.LeftAlt);
+            _keyRightAlt = InputBridge.GetKeyButton(KeyCode.RightAlt);
+#endif
         }
 
         void UpdateInput()
         {
+            if (disableRecord) return;
             try
             {
-                if (useInput)
+                if (config.useInput)
                 {
                     if (_keyZ.WasPressedThisFrame())
                     {
-                        if (IsCtrlPressed())
+                        if (IsMainModifierKeyPressed())
                         {
                             if (IsShiftPressed()) RedoInner();
                             else UndoInner();
@@ -51,19 +60,26 @@ namespace UnityPlugin.GameUndo
                     }
                     else if (_keyY.WasPressedThisFrame())
                     {
-                        if (IsCtrlPressed()) RedoInner();
+                        if (IsMainModifierKeyPressed()) RedoInner();
                     }
                 }
             }
             catch (Exception e)
             {
                 Debug.LogException(e);
-                useInput = false;
+                config.useInput = false;
             }
         }
 
-        bool IsCtrlPressed()
+        bool IsMainModifierKeyPressed()
         {
+#if UNITY_EDITOR
+            if (config.useEditorInput)
+            {
+                return _keyLeftAlt.IsPressed() || _keyRightAlt.IsPressed();
+            }
+#endif
+
 #if UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
             return _keyLeftCommand.IsPressed() || _keyRightCommand.IsPressed();
 #else

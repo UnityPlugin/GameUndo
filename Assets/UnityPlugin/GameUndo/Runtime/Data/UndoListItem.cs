@@ -59,7 +59,9 @@ namespace UnityPlugin.GameUndo
             {
                 if (oldValue) _before?.Invoke(Target, _refItem);
                 else _after?.Invoke(Target, _refItem);
+#if GAMEUNDO_TO_STRING
                 _changed = true;
+#endif
             }
             catch (Exception e)
             {

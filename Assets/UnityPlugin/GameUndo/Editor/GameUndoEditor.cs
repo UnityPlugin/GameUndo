@@ -17,7 +17,7 @@ namespace UnityPlugin.GameUndo
         {
             base.OnInspectorGUI();
 
-            var current = _target.CurrentRecord;
+            var current = GameUndo.CurrentRecord;
             if (!string.IsNullOrEmpty(current))
             {
                 EditorGUILayout.Space();
@@ -32,13 +32,13 @@ namespace UnityPlugin.GameUndo
             var sb = UnityGenericPool<StringBuilder>.Get();
             using (var scope = IMGUI.Foldout("GameUndoEditor_Undo List"))
             {
-                scope.name.text = sb.Clear().Append("Undo List (").Append(_target.UndoCount).Append(')').ToString();
+                scope.name.text = sb.Clear().Append("Undo List (").Append(GameUndo.UndoCount).Append(')').ToString();
                 if (scope.fold)
                 {
                     using (IMGUI.Indent(-1))
                     {
-                        var index = _target.UndoIndex;
-                        for (var i = _target.UndoCount - 1; i >= 0; i--)
+                        var index = GameUndo.UndoIndex;
+                        for (var i = GameUndo.UndoCount - 1; i >= 0; i--)
                         {
                             using (IMGUI.Color(i > index ? REDO_COLOR : UNDO_COLOR))
                             {
@@ -46,9 +46,10 @@ namespace UnityPlugin.GameUndo
                                 {
                                     EditorGUILayout.LabelField(IMGUI.TmpC(i == index ? ">" : " "), COL_SIZE);
 
-                                    var num = _target.UndoCount - i;
+                                    var num = GameUndo.UndoCount - i;
                                     EditorGUILayout.LabelField(IMGUI.TmpC(num.ToString()), COL_SIZE);
-                                    EditorGUILayout.LabelField(IMGUI.TmpC(_target.GetUndoName(i)));
+                                    var content = GameUndo.GetUndoName(i);
+                                    EditorGUILayout.LabelField(IMGUI.TmpC(content, null, content));
                                 }
                             }
                         }
@@ -56,6 +57,12 @@ namespace UnityPlugin.GameUndo
                 }
             }
             UnityGenericPool<StringBuilder>.Release(sb);
+
+            EditorGUILayout.Space();
+            if (GUILayout.Button("Clear"))
+            {
+                GameUndo.Clear();
+            }
         }
     }
 }
