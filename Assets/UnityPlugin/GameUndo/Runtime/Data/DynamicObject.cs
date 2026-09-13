@@ -5,17 +5,17 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityPlugin.Bridge;
 
 #if GAMEUNDO_TO_STRING
 using System.Text;
-using UnityPlugin.Bridge;
 #endif
 
 namespace UnityPlugin.GameUndo
 {
     public class DynamicObject : IDisposable
     {
-        protected Dictionary<string, object> _values = new Dictionary<string, object>();
+        protected Dictionary<string, object> _values = UnityGenericPool<Dictionary<string, object>>.Get();
 #if GAMEUNDO_TO_STRING
         bool _changed;
         string _str;
@@ -23,13 +23,16 @@ namespace UnityPlugin.GameUndo
 
         public object this[string key]
         {
-            get => _values.TryGetValue(key, out var value) ? value : null;
+            get => _values != null && _values.TryGetValue(key, out var value) ? value : null;
             set
             {
-                _values[key] = value;
+                if (_values != null)
+                {
+                    _values[key] = value;
 #if GAMEUNDO_TO_STRING
-                _changed = true;
+                    _changed = true;
 #endif
+                }
             }
         }
 
@@ -48,16 +51,23 @@ namespace UnityPlugin.GameUndo
 
         public void Clear()
         {
-            _values.Clear();
+            if (_values != null)
+            {
+                _values.Clear();
 #if GAMEUNDO_TO_STRING
-            _changed = true;
+                _changed = true;
 #endif
+            }
         }
 
         public void Dispose()
         {
-            _values.Clear();
-            _values = null;
+            if (_values != null)
+            {
+                _values.Clear();
+                UnityGenericPool<Dictionary<string, object>>.Release(_values);
+                _values = null;
+            }
         }
 
         public bool Equals(DynamicObject obj)
@@ -80,15 +90,17 @@ namespace UnityPlugin.GameUndo
         {
             if (string.IsNullOrEmpty(_str) || _changed)
             {
-                var sb = UnityGenericPool<StringBuilder>.Get();
-                sb.Clear();
-                foreach (var pair in _values)
+                using (PoolExt.GetScope<StringBuilder>(out var sb))
                 {
-                    sb.Append(pair.Key).Append('(').Append(pair.Value).Append(')').Append(',');
+                    sb.Clear();
+                    foreach (var pair in _values)
+                    {
+                        sb.Append(pair.Key).Append('(').Append(pair.Value).Append(')').Append(',');
+                    }
+                    if (sb.Length > 0) sb.Length--;
+                    _str = sb.ToString();
+                    _changed = false;
                 }
-                if (sb.Length > 0) sb.Length--;
-                _str = sb.ToString();
-                UnityGenericPool<StringBuilder>.Release(sb);
             }
             return _str;
         }

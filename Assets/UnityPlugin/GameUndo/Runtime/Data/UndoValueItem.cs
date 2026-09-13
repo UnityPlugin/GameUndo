@@ -140,13 +140,15 @@ namespace UnityPlugin.GameUndo
             {
                 var targetStr = Target == null ? "Null" : Target.GetType().Name;
                 var contextStr = Context == null ? "Null" : Context.GetType().Name;
-                var sb = UnityGenericPool<StringBuilder>.Get();
-                sb.Clear()
-                .Append(Name)
-                .Append(" [").Append(targetStr).Append('@').Append(contextStr).Append("] : ")
-                .Append(_oldValue).Append(" -> ").Append(_newValue);
-                _str = sb.ToString();
-                UnityGenericPool<StringBuilder>.Release(sb);
+                using (PoolExt.GetScope<StringBuilder>(out var sb))
+                {
+                    sb.Clear()
+                    .Append(Name)
+                    .Append(" [").Append(targetStr).Append('@').Append(contextStr).Append("] : ")
+                    .Append(_oldValue).Append(" -> ").Append(_newValue);
+                    _str = sb.ToString();
+                }
+                _changed = false;
             }
             return _str;
 #else

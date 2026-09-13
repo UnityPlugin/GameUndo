@@ -141,7 +141,7 @@ namespace UnityPlugin.GameUndo
 
             if (string.IsNullOrEmpty(param.name))
             {
-                param.name = $"Set Value";
+                param.name = "Set Value";
                 param.mergeable = false;
             }
 
@@ -215,7 +215,7 @@ namespace UnityPlugin.GameUndo
 
             if (string.IsNullOrEmpty(param.name))
             {
-                param.name = $"Record Value";
+                param.name = "Record Value";
                 param.mergeable = false;
             }
 
@@ -258,7 +258,7 @@ namespace UnityPlugin.GameUndo
 
             if (string.IsNullOrEmpty(param.name))
             {
-                param.name = $"Set List";
+                param.name = "Set List";
             }
 
             var record = GetUndoItem<UndoListItem<T>>();
@@ -323,7 +323,7 @@ namespace UnityPlugin.GameUndo
 
             if (string.IsNullOrEmpty(param.name))
             {
-                param.name = $"Record Object";
+                param.name = "Record Object";
                 param.mergeable = false;
             }
 
@@ -533,6 +533,10 @@ namespace UnityPlugin.GameUndo
         {
             if (_undoList.Count > 0)
             {
+                for (var i = 0; i < _undoList.Count; i++)
+                {
+                    _undoList[i].Dispose();
+                }
                 _undoList.Clear();
             }
 
@@ -540,7 +544,10 @@ namespace UnityPlugin.GameUndo
             {
                 foreach (var pair in _undoItemPool)
                 {
-                    pair.Value.Clear();
+                    while (pair.Value.TryPop(out var undoItem))
+                    {
+                        undoItem.Dispose();
+                    }
                 }
                 _undoItemPool.Clear();
             }

@@ -49,6 +49,12 @@ namespace UnityPlugin.GameUndo
             _refItem = param.refItem;
             _before = param.before;
             _after = param.after;
+
+            DoSet(false);
+
+#if GAMEUNDO_TO_STRING
+            _changed = true;
+#endif
         }
 
         public void DoGet(bool oldValue) { }
@@ -59,9 +65,6 @@ namespace UnityPlugin.GameUndo
             {
                 if (oldValue) _before?.Invoke(Target, _refItem);
                 else _after?.Invoke(Target, _refItem);
-#if GAMEUNDO_TO_STRING
-                _changed = true;
-#endif
             }
             catch (Exception e)
             {
@@ -71,24 +74,7 @@ namespace UnityPlugin.GameUndo
 
         public bool IsChanged() => true;
 
-
-        public bool Merge(IUndoItem item)
-        {
-            do
-            {
-                if (item == null) break;
-                if (!Mergeable || !item.Mergeable) break;
-                if (Name != item.Name) break;
-                if (Context != item.Context) break;
-                if (Target != item.Target) break;
-
-                if (!(item is UndoListItem<T> tmp)) break;
-                if (_refItem.Equals(tmp._refItem)) break;
-
-                return true;
-            } while (false);
-            return false;
-        }
+        public bool Merge(IUndoItem item) => false;
 
         public void Reset()
         {
@@ -114,13 +100,15 @@ namespace UnityPlugin.GameUndo
             {
                 var targetStr = Target == null ? "Null" : Target.GetType().Name;
                 var contextStr = Context == null ? "Null" : Context.GetType().Name;
-                var sb = UnityGenericPool<StringBuilder>.Get();
-                sb.Clear()
-                .Append(Name)
-                .Append(" [").Append(targetStr).Append('@').Append(contextStr).Append("] : ")
-                .Append(_refItem);
-                _str = sb.ToString();
-                UnityGenericPool<StringBuilder>.Release(sb);
+                using (PoolExt.GetScope<StringBuilder>(out var sb))
+                {
+                    sb.Clear()
+                    .Append(Name)
+                    .Append(" [").Append(targetStr).Append('@').Append(contextStr).Append("] : ")
+                    .Append(_refItem);
+                    _str = sb.ToString();
+                }
+                _changed = false;
             }
             return _str;
 #else

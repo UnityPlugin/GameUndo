@@ -4,10 +4,10 @@
 
 using System;
 using UnityEngine;
+using UnityPlugin.Bridge;
 
 #if GAMEUNDO_TO_STRING
 using System.Text;
-using UnityPlugin.Bridge;
 #endif
 
 namespace UnityPlugin.GameUndo
@@ -26,8 +26,8 @@ namespace UnityPlugin.GameUndo
     {
         Action<object, DynamicObject> _getter;
         Action<object, DynamicObject> _setter;
-        DynamicObject _oldValue = new DynamicObject();
-        DynamicObject _newValue = new DynamicObject();
+        DynamicObject _oldValue = UnityGenericPool<DynamicObject>.Get();
+        DynamicObject _newValue = UnityGenericPool<DynamicObject>.Get();
 
 #if GAMEUNDO_TO_STRING
         bool _changed;
@@ -128,16 +128,23 @@ namespace UnityPlugin.GameUndo
             _getter = null;
             _setter = null;
 
-            _oldValue.Clear();
-            _newValue.Clear();
+            if (_oldValue != null) _oldValue.Clear();
+            if (_newValue != null) _newValue.Clear();
         }
 
         public void Dispose()
         {
             Reset();
-
-            _oldValue = null;
-            _newValue = null;
+            if (_oldValue != null)
+            {
+                UnityGenericPool<DynamicObject>.Release(_oldValue);
+                _oldValue = null;
+            }
+            if (_newValue != null)
+            {
+                UnityGenericPool<DynamicObject>.Release(_newValue);
+                _newValue = null;
+            }
         }
 
         public override string ToString()
@@ -147,13 +154,15 @@ namespace UnityPlugin.GameUndo
             {
                 var targetStr = Target == null ? "Null" : Target.GetType().Name;
                 var contextStr = Context == null ? "Null" : Context.GetType().Name;
-                var sb = UnityGenericPool<StringBuilder>.Get();
-                sb.Clear()
-                .Append(Name)
-                .Append(" [").Append(targetStr).Append('@').Append(contextStr).Append("] : ")
-                .Append(_oldValue).Append(" -> ").Append(_newValue);
-                _str = sb.ToString();
-                UnityGenericPool<StringBuilder>.Release(sb);
+                using (PoolExt.GetScope<StringBuilder>(out var sb))
+                {
+                    sb.Clear()
+                    .Append(Name)
+                    .Append(" [").Append(targetStr).Append('@').Append(contextStr).Append("] : ")
+                    .Append(_oldValue).Append(" -> ").Append(_newValue);
+                    _str = sb.ToString();
+                }
+                _changed = false;
             }
             return _str;
 #else
