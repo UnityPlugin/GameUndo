@@ -4,7 +4,7 @@ using UnityEngine;
 namespace UnityPlugin.GameUndo
 {
     [Serializable]
-    public struct UndoConfig
+    public struct GameUndoConfig
     {
         [Range(32, 128)] public int undoSize;
         public float mergeInterval;

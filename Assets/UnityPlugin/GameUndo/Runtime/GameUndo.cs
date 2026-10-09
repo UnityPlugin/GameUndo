@@ -11,7 +11,7 @@ namespace UnityPlugin.GameUndo
 {
     public partial class GameUndo : Singleton<GameUndo>
     {
-        static UndoConfig DEFAULT_CONFIG = new UndoConfig
+        static GameUndoConfig DEFAULT_CONFIG = new GameUndoConfig
         {
             undoSize = 128,
             useInput = true,
@@ -21,7 +21,7 @@ namespace UnityPlugin.GameUndo
 #endif
         };
 
-        [SerializeField] UndoConfig config = DEFAULT_CONFIG;
+        [SerializeField] GameUndoConfig config = DEFAULT_CONFIG;
         [SerializeField] bool stopMerge = false;
         [SerializeField] bool disableRecord = false;
 
@@ -47,7 +47,7 @@ namespace UnityPlugin.GameUndo
         public static int UndoIndex { get => HasInstance() ? Instance._index : -1; }
         public static string CurrentRecord { get => _currentRecord == null ? null : _currentRecord.ToString(); }
 
-        public static UndoConfig Config
+        public static GameUndoConfig Config
         {
             get => HasInstance() ? Instance.config : DEFAULT_CONFIG;
             set

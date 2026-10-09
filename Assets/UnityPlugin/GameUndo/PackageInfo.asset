@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fd6e407540a22e428a0027f23489797, type: 3}
+  m_Name: PackageInfo
+  m_EditorClassIdentifier: 
+  gitURL: git@github.com:UnityPlugin/GameUndo.git?path=/Assets/UnityPlugin/GameUndo
+  packageName: com.zerowq.unityplugin.gameundo
+  displayName: Game Undo
+  unity: 2019.4
+  version: 1.0.0
+  description: Undo Manager for runtime
+  requires:
+  - git@github.com:UnityPlugin/Bridge.git?path=/Assets/UnityPlugin/Bridge
+  - git@github.com:UnityPlugin/Singleton.git?path=/Assets/UnityPlugin/Singleton
+  requireVersions: []
+  options:
+  - git@github.com:UnityPlugin/EditorUtils.git?path=/Assets/UnityPlugin/EditorUtils
+  macros: []
+  author: zeroWq

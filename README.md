@@ -1,7 +1,7 @@
 ### Unity Version
 **Min Version** 2019.4  
 
-### Package Git url
+### Package Git Url
 git@github.com:UnityPlugin/GameUndo.git?path=/Assets/UnityPlugin/GameUndo  
 
 ### Requires
